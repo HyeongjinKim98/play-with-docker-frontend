@@ -1,10 +1,10 @@
 import './App.css';
-
+import { Login } from './auth/Login';
 export const App=() =>{
   return (
     <div className="App">
       <div className='App-Container'>
-        {process.env.REACT_APP_URL}
+        <Login/>
       </div>
     </div>
   );
