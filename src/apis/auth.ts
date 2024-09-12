@@ -1,7 +1,7 @@
 import { POST,GET } from "./common";
 
 export const POST_KAKAO_LOGIN=()=>{
-    const code = 'p2yn8J-CZWHYe0WW7ov3B9rvhnA4gqkp0pTm-kvw45ccbzCigyMi5wAAAAQKKwynAAABkclY6f5yxKx5jTsi9A'
+    const code = 'y99NJBkuHCxa8d8GzcU62Bgm9aAFsG8H000LyRfW84JYHc5Vcph90AAAAAQKKiVTAAABkdI6wt7dCc_9be4aqQ'
     console.log(code)
     console.log(encodeURIComponent(code))
     fetch(process.env.REACT_APP_URL+'/account/kakao/login', {
