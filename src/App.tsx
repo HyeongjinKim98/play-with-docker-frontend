@@ -13,7 +13,7 @@ export const App=() =>{
           <Route path='/' element={<Prompt/>}/>
           <Route path='/login' element={<Login/>}/>
           <Route path='/auth/kakao/callback' element={<Callback platform={'KAKAO'}/>}/>
-          <Route path='/auth/naver/callback' element={<Callback platform={'NAVER'}/>}/>
+          <Route path='/oauth2/code/naver' element={<Callback platform={'NAVER'}/>}/>
         </Routes>
        </BrowserRouter>
       </div>
