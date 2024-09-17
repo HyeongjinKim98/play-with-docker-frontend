@@ -25,6 +25,17 @@ export type ImageDetailElements = {
     size: string | null,
 }
 
+
+export type LsImageElements={
+    lsImageList : LsImageElement[]
+}
+export type LsImageElement= {
+	createDate: string|null,
+	updateDate: string|null,
+	name: string|null,
+	tag: string|null,
+	size: string|null,
+}
 // api/v1/image/rm
 export type ImageRm={
     imageDeleteResult: boolean
@@ -150,6 +161,7 @@ export type Response =
     | InspectImage
     | ImageRm
     | LsNetworkElements
+    | LsImageElements
     | CreateNetwork
     | InspectNetWork
     | RemoveNetwork
@@ -165,7 +177,6 @@ export type Response =
     export const ParseResponse = (response: Response): string[] => {
         console.log(response)
         switch (true) {
-    
             // 에러 메시지 처리
             case 'resultCode' in response: {
                 const { resultCode, description } = response as ErrorMessage;
@@ -178,6 +189,30 @@ export type Response =
                 return [`Pulling Image: ${pullImageFullName}`];
             }
     
+            // 이미지 목록 처리
+            case 'lsImageList' in response: {
+                const { lsImageList } = response as LsImageElements;
+            
+                // 첫 번째 줄: 헤더
+                let output = [
+                    `CREATE DATE`.padEnd(30) + `UPDATE DATE`.padEnd(30) + `NAME`.padEnd(20) + `TAG`.padEnd(20) + 'SIZE'.padEnd(20)
+                ];
+            
+                // 이미지 요소 추가
+                output = output.concat(lsImageList.map(image => {
+                    const createDate = (image.createDate || '').padEnd(30, ' ');
+                    const updateDate = (image.updateDate || '').padEnd(30, ' ');
+                    const name = (image.name || '').padEnd(20, ' ');
+                    const tag = (image.tag || '').padEnd(20, ' ');
+                    const size = (image.size || '').padEnd(20, ' ');
+            
+                    // 각 필드를 합친다.
+                    return createDate + updateDate + name + tag + size;
+                }));
+            
+                return output;
+            }
+
             // 이미지 Inspect 처리
             case 'inspectImage' in response: {
                 const { inspectImage } = response as InspectImage;
@@ -233,10 +268,26 @@ export type Response =
             case 'inspectNetworkDetailElements' in response: {
                 const { inspectNetworkDetailElements } = response as InspectNetWork;
                 const { createDate, updateDate, name, subnet, ipRange, gateway, enableIcc, mtu, containerInfo } = inspectNetworkDetailElements;
-                let containerDetails = containerInfo.map(container =>
-                    `${(container.name || '').padEnd(20)} ${(container.imageName || '')}:${(container.imageTag || '').padEnd(10)} ${(container.privateIp || '').padEnd(15)} ${(container.outerPort || '')} -> ${(container.innerPort || '')}  ${(container.status || '')}`
-                );
-    
+                
+                // 문자열의 공백을 '\u00A0'로 패딩하여 길이를 맞춤
+                const padString = (str: string, length: number) => {
+                    const strLength = [...str].length; // 유니코드 문자열 길이를 정확히 계산
+                    return str + '\u00A0'.repeat(length - strLength);
+                };
+            
+                // container details를 포맷팅
+                let containerDetails = containerInfo.map(container => {
+                    const imageInfo = `${container.imageName || ''}:${container.imageTag || ''}`;  // 이미지 이름과 태그 붙여서 출력
+                    const ports = `${container.outerPort || ''} -> ${container.innerPort || ''}`;   // 포트 정보를 붙여서 출력
+                    return (
+                        padString(container.name || '', 20)     // NAME
+                        + padString(imageInfo, 30)              // IMAGE
+                        + padString(container.privateIp || '', 15)  // IP
+                        + padString(ports, 20)                 // PORTS (outer -> inner)
+                        + padString(container.status || '', 15)  // STATUS
+                    );
+                });
+            
                 return [
                     `NETWORK INSPECT:`,
                     `Name:         ${name?.padEnd(20)}`,
@@ -246,12 +297,17 @@ export type Response =
                     `ICC Enabled:  ${enableIcc}`,
                     `MTU:          ${mtu}`,
                     `Containers:`,
-                    `  NAME                IMAGE               IP              PORTS             STATUS`,
+                    padString('NAME', 20)
+                    + padString('IMAGE', 30)
+                    + padString('IP', 15)
+                    + padString('PORTS', 20)
+                    + padString('STATUS', 15),
                     ...containerDetails,
                     `Created: ${createDate}`,
                     `Updated: ${updateDate}`
                 ];
             }
+            
     
             // 네트워크 삭제 처리
             case 'networkDeleteResult' in response: {
@@ -262,18 +318,37 @@ export type Response =
             // 컨테이너 목록 처리
             case 'containerElementsList' in response: {
                 const { containerElementsList } = response as ContainerElementsList;
+                
+                // 문자열의 공백을 '\u00A0'로 패딩하여 길이를 맞춤
+                const padString = (str: string, length: number) => {
+                    const strLength = [...str].length; // 유니코드 문자열 길이를 정확히 계산
+                    return str + '\u00A0'.repeat(length - strLength);
+                };
+            
                 let output = [
-                    `CONTAINER ID`.padEnd(20)+
-                    'IMAGE'.padEnd(20)
-                    +'STATUS'.padEnd(20)
-                    +'PORTS'.padEnd(20)
-                    +'NAMES'.padEnd(20)
+                    padString('CONTAINERID', 20)
+                    + padString('IMAGE', 20)
+                    + padString('STATUS', 20)
+                    + padString('PORTS', 20)
+                    + padString('NAMES', 20)
                 ];
-                output = output.concat(containerElementsList.map(container =>
-                    `${(container.name || '').padEnd(20)}${(container.imageName || '').padEnd(20)}${(container.status || '').padEnd(20)}${(container.outputPort || '')}:${(container.innerPort || '').padEnd(20)}${(container.name || '')}`
-                ));
-                return output;
+            
+                output = output.concat(containerElementsList.map(container => {
+                    const ports = `${container.outputPort || 'null'}:${container.innerPort || 'null'}`;
+                    return (
+                        padString(container.name || ' ', 20)
+                        + padString(container.imageName || '', 20)
+                        + padString(container.status || '', 20)
+                        + padString(ports, 20) 
+                        + padString(container.name || '', 20)
+                    );
+                }));
+            
+                return output.map(line => line.replace(/ /g, '\u00A0'));
             }
+            
+            
+            
     
             // 컨테이너 생성 처리
             case 'containerName' in response: {
@@ -291,7 +366,7 @@ export type Response =
                     `Name:         ${name?.padEnd(20)}`,
                     `Image:        ${imageName}:${imageTag?.padEnd(20)}`,
                     `IP:           ${privateIp?.padEnd(15)}`,
-                    `Ports:        ${outerPort} -> ${innerPort?.padEnd(10)}`,
+                    `Ports:        ${outerPort?.padEnd(10)} : ${innerPort?.padEnd(10)}`,
                     `Status:       ${status}`,
                     `Auto-remove:  ${stopRm}`,
                     `Created:      ${createDate}`,

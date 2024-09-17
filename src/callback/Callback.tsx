@@ -2,15 +2,34 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { authStore } from "../store/authStore";
 
-type Tplatform = {
-    platform: 'NAVER' | 'KAKAO'
-}
-
-export const Callback = ({ platform }: Tplatform) => {
+export const Callback = ({platform} : {platform : string}) => {
     const [params] = useSearchParams();
     const code = params.get('code');
     const navigate = useNavigate();
     const { setTokens, getAccessToken } = authStore();
+
+    const POST_LOGIN = (platform : string, code: string) => {
+        fetch(`${process.env.REACT_APP_URL}/account/${platform.toLowerCase()}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: encodeURIComponent(code)
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                if (data.accessToken && data.refreshToken) {
+                    setTokens(data.accessToken, data.refreshToken);
+                    navigate('/');
+                }
+            })
+            .catch(err => {
+                console.error('로그인 실패:', err);
+            });
+    }
 
     useEffect(() => {
         console.log(platform);
@@ -25,59 +44,9 @@ export const Callback = ({ platform }: Tplatform) => {
         }
 
         if (code) {
-            if (platform === 'KAKAO') {
-                POST_KAKAO_LOGIN(code);
-            } else if (platform === 'NAVER') {
-                POST_NAVER_LOGIN(code);
-            }
+            POST_LOGIN(platform,code)
         }
     }, [code, platform]);
-
-    const POST_KAKAO_LOGIN = (code: string) => {
-        fetch(`${process.env.REACT_APP_URL}/account/kakao/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                code: encodeURIComponent(code)
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                if (data.accessToken && data.refreshToken) {
-                    setTokens(data.accessToken, data.refreshToken); // authStore에 토큰 저장
-                    navigate('/');
-                }
-            })
-            .catch(err => {
-                console.error('로그인 실패:', err);
-            });
-    }
-
-    const POST_NAVER_LOGIN = (code: string) => {
-        fetch(`${process.env.REACT_APP_URL}/account/naver/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                code: encodeURIComponent(code)
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.accessToken && data.refreshToken) {
-                    setTokens(data.accessToken, data.refreshToken); // authStore에 토큰 저장
-                    navigate('/');
-                }
-            })
-            .catch(err => {
-                console.error('로그인 실패:', err);
-            });
-    }
-
     return (
         <>
         </>
