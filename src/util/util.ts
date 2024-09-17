@@ -107,7 +107,7 @@ export type ContainerElements={
     imageName : string | null;
     imageTag : string | null;
     privateIp : string | null;
-    outputPort : string | null;
+    outerPort : string | null;
     innerPort  : string | null;
     status : string;
 }
@@ -334,7 +334,7 @@ export type Response =
                 ];
             
                 output = output.concat(containerElementsList.map(container => {
-                    const ports = `${container.outputPort || 'null'}:${container.innerPort || 'null'}`;
+                    const ports = `${container.outerPort || 'null'}:${container.innerPort || 'null'}`;
                     return (
                         padString(container.name || ' ', 20)
                         + padString(container.imageName || '', 20)
